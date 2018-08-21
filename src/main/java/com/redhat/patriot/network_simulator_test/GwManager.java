@@ -10,36 +10,38 @@ import com.redhat.patriot.network_simulator.example.manager.DockerManager;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 /**
  * The type Docker controller.
  */
 public class GwManager {
+    private DockerFileBuilder dockerFileBuilder = new DockerFileBuilder();
+    private String appName;
+    private List<String> args;
+    private String appPath;
+    private String tag;
     private DockerManager dockerManager = new DockerManager();
     private HashMap<String, DockerContainer> gwContainers = new HashMap<>();
+
     /**
      * Genererate enviroment.
      */
-    public AppConfig deployGateway(DockerFileBuilder dockerFileBuilder, String contName,
-                                   String iotHost, String wsHost, String mobileHost) {
-
+    public AppConfig deploy() {
         try {
             Path tmpDir = Files.createTempDirectory(Paths.get("/tmp"), "dockerfiles");
             Path dockerfile = Files.createTempFile(tmpDir, "tempDockerfile", "");
             dockerFileBuilder.write(dockerfile);
-            String tagApp = "smart_home_gateway:01";
-            buildImage(new HashSet<>(Arrays.asList(tagApp)), dockerfile);
+            buildImage(new HashSet<>(Arrays.asList(tag)), dockerfile);
+            Container appCont = createAndStart(appName, tag);
 
-            Container smartGateway = createAndStart(contName, tagApp);
-            dockerManager.runCommand(smartGateway, "java -Diot.host=" + iotHost +
-                    " -Diot.ws.host=" + wsHost + " -Dmobile.host=" + mobileHost +
-                    " -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager " +
-                    "-jar app/target/smart-home-gateway-app-1.0-SNAPSHOT.jar");
-            AppConfig appConfig = new AppConfig(dockerManager.findIpAddress(smartGateway), "running", smartGateway.getId());
+            String command = "java";
+            for (String arg : args) {
+                command += " -D" + arg;
+            }
+            command = command + " -jar " + appPath;
+            dockerManager.runCommand(appCont, command);
+            AppConfig appConfig = new AppConfig(dockerManager.findIpAddress(appCont), "running", appCont.getId());
 
             return appConfig;
 
@@ -49,7 +51,7 @@ public class GwManager {
         }
 
     }
-    public void destroyGw(AppConfig appConfig) {
+    public void destroy(AppConfig appConfig) {
         dockerManager.destroyContainer(gwContainers.get(appConfig.getContainerId()));
     }
 
@@ -59,10 +61,21 @@ public class GwManager {
     }
 
     private DockerContainer createAndStart(String name, String tag) {
-        DockerContainer smartGateway = (DockerContainer) dockerManager.createContainer(name, tag);
-        gwContainers.put(smartGateway.getId(), smartGateway);
-        dockerManager.startContainer(smartGateway);
-        return smartGateway;
+        DockerContainer appCont = (DockerContainer) dockerManager.createContainer(name, tag);
+        gwContainers.put(appCont.getId(), appCont);
+        dockerManager.startContainer(appCont);
+        return appCont;
+    }
+
+    public DockerFileBuilder newApp(String name) {
+        this.appName = name;
+        return dockerFileBuilder;
+    }
+
+    public void setProps(List<String> args, String appPath, String tag) {
+        this.args = args;
+        this.appPath = appPath;
+        this.tag = tag;
     }
 
 
