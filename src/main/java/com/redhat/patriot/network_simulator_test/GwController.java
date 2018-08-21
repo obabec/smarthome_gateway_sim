@@ -9,6 +9,7 @@ public class GwController {
 
     public void startGateway() throws InterruptedException {
             GwManager gwManager = new GwManager();
+            String name = "gateway";
             gwManager.newApp("gateway").from("nimmis/java:openjdk-8-jdk")
                     .run("echo \"deb http://archive.ubuntu.com/ubuntu trusty main universe\" " +
                             "> /etc/apt/sources.list")
@@ -26,9 +27,9 @@ public class GwController {
             gwManager.setProps(Arrays.asList("iot.host=10.40.1.23:8282", "iot.mqtt.host=10.40.1.23:1883",
                     "mqtt.host=127.0.0.1:1883", "mobile.host=0.0.0.0:8283"), "app/target/smart-home-gateway-app-1.0-SNAPSHOT.jar",
                     "app_gateway");
-            AppConfig appConfig = gwManager.deploy();
+            AppConfig appConfig = gwManager.deploy(name);
             Thread.sleep(5000);
-            gwManager.destroy(appConfig);
+            gwManager.destroy(name);
 
     }
 }

@@ -7,6 +7,7 @@ import com.redhat.patriot.network_simulator.example.image.docker.DockerImage;
 import com.redhat.patriot.network_simulator.example.image.docker.builder.DockerFileBuilder;
 import com.redhat.patriot.network_simulator.example.manager.DockerManager;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -16,43 +17,46 @@ import java.util.*;
  * The type Docker controller.
  */
 public class GwManager {
-    private DockerFileBuilder dockerFileBuilder = new DockerFileBuilder();
-    private String appName;
     private List<String> args;
     private String appPath;
     private String tag;
     private DockerManager dockerManager = new DockerManager();
-    private HashMap<String, DockerContainer> gwContainers = new HashMap<>();
+    private HashMap<String, Application> apps = new HashMap<>();
 
     /**
      * Genererate enviroment.
      */
-    public AppConfig deploy() {
+    public AppConfig deploy(String name) {
+            buildImage(name);
+            apps.get(name).setDockerContainer(createAndStart(name, tag));
+            dockerManager.runCommand(apps.get(name).getDockerContainer(), prepareCommand());
+            AppConfig appConfig =
+                    new AppConfig(dockerManager.findIpAddress(apps.get(name).getDockerContainer()), "running");
+            return appConfig;
+    }
+
+    private String prepareCommand() {
+        String command = "java";
+        for (String arg : args) {
+            command += " -D" + arg;
+        }
+        return command + " -jar " + appPath;
+    }
+
+    public void destroy(String name) {
+        dockerManager.destroyContainer(apps.get(name).getDockerContainer());
+    }
+
+    private void buildImage(String name) {
+
         try {
             Path tmpDir = Files.createTempDirectory(Paths.get("/tmp"), "dockerfiles");
             Path dockerfile = Files.createTempFile(tmpDir, "tempDockerfile", "");
-            dockerFileBuilder.write(dockerfile);
+            apps.get(name).getDockerFileBuilder().write(dockerfile);
             buildImage(new HashSet<>(Arrays.asList(tag)), dockerfile);
-            Container appCont = createAndStart(appName, tag);
-
-            String command = "java";
-            for (String arg : args) {
-                command += " -D" + arg;
-            }
-            command = command + " -jar " + appPath;
-            dockerManager.runCommand(appCont, command);
-            AppConfig appConfig = new AppConfig(dockerManager.findIpAddress(appCont), "running", appCont.getId());
-
-            return appConfig;
-
-        } catch (Exception e ) {
+        } catch (IOException e) {
             e.printStackTrace();
-            return null;
         }
-
-    }
-    public void destroy(AppConfig appConfig) {
-        dockerManager.destroyContainer(gwContainers.get(appConfig.getContainerId()));
     }
 
     private void buildImage(Set<String> tags, Path dockerfile) {
@@ -62,13 +66,13 @@ public class GwManager {
 
     private DockerContainer createAndStart(String name, String tag) {
         DockerContainer appCont = (DockerContainer) dockerManager.createContainer(name, tag);
-        gwContainers.put(appCont.getId(), appCont);
         dockerManager.startContainer(appCont);
         return appCont;
     }
 
     public DockerFileBuilder newApp(String name) {
-        this.appName = name;
+        DockerFileBuilder dockerFileBuilder = new DockerFileBuilder();
+        apps.put(name, new Application(dockerFileBuilder));
         return dockerFileBuilder;
     }
 
@@ -78,5 +82,15 @@ public class GwManager {
         this.tag = tag;
     }
 
+    public void setArgs(List<String> args) {
+        this.args = args;
+    }
 
+    public void setAppPath(String appPath) {
+        this.appPath = appPath;
+    }
+
+    public void setTag(String tag) {
+        this.tag = tag;
+    }
 }
