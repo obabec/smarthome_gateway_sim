@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Set;
 
 /**
  * The type Docker controller.
@@ -23,37 +24,45 @@ public class GwManager {
     /**
      * Genererate enviroment.
      */
-    public AppConfig deployGateway(DockerFileBuilder dockerFileBuilder,
+    public AppConfig deployGateway(DockerFileBuilder dockerFileBuilder, String contName,
                                    String iotHost, String wsHost, String mobileHost) {
-        AppConfig appConfig = null;
+
         try {
             Path tmpDir = Files.createTempDirectory(Paths.get("/tmp"), "dockerfiles");
             Path dockerfile = Files.createTempFile(tmpDir, "tempDockerfile", "");
             dockerFileBuilder.write(dockerfile);
-            DockerManager dockerManager = new DockerManager();
             String tagApp = "smart_home_gateway:01";
-            DockerImage dockerImage = new DockerImage(dockerManager);
-            dockerImage.buildImage(new HashSet<String>(Arrays.asList(tagApp)), dockerfile.toAbsolutePath().toString());
+            buildImage(new HashSet<>(Arrays.asList(tagApp)), dockerfile);
 
-            Container smartGateway = dockerManager.createContainer("smart_gateway", tagApp);
-            gwContainers.put(smartGateway.getId(), (DockerContainer) smartGateway);
-            dockerManager.startContainer(smartGateway);
+            Container smartGateway = createAndStart(contName, tagApp);
             dockerManager.runCommand(smartGateway, "java -Diot.host=" + iotHost +
                     " -Diot.ws.host=" + wsHost + " -Dmobile.host=" + mobileHost +
                     " -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager " +
                     "-jar app/target/smart-home-gateway-app-1.0-SNAPSHOT.jar");
-            appConfig = new AppConfig(dockerManager.findIpAddress(smartGateway), "running", smartGateway.getId());
+            AppConfig appConfig = new AppConfig(dockerManager.findIpAddress(smartGateway), "running", smartGateway.getId());
+
             return appConfig;
 
         } catch (Exception e ) {
             e.printStackTrace();
-            destroyGw(appConfig);
             return null;
         }
 
     }
     public void destroyGw(AppConfig appConfig) {
         dockerManager.destroyContainer(gwContainers.get(appConfig.getContainerId()));
+    }
+
+    private void buildImage(Set<String> tags, Path dockerfile) {
+        DockerImage dockerImage = new DockerImage(dockerManager);
+        dockerImage.buildImage(tags, dockerfile.toAbsolutePath().toString());
+    }
+
+    private DockerContainer createAndStart(String name, String tag) {
+        DockerContainer smartGateway = (DockerContainer) dockerManager.createContainer(name, tag);
+        gwContainers.put(smartGateway.getId(), smartGateway);
+        dockerManager.startContainer(smartGateway);
+        return smartGateway;
     }
 
 

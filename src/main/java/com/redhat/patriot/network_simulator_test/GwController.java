@@ -7,7 +7,7 @@ import java.util.Arrays;
 
 public class GwController {
 
-    public void startGateway() {
+    public void startGateway() throws InterruptedException {
             GwManager gwManager = new GwManager();
             DockerFileBuilder dockerFileBuilder = new DockerFileBuilder();
             dockerFileBuilder.from("nimmis/java:openjdk-8-jdk")
@@ -24,8 +24,9 @@ public class GwController {
                     .run(Arrays.asList("cd smart-home-gateway", "git checkout dummy-test", "mvn package"))
                     .entrypoint("tail -f /dev/null")
                     .workdir("/smart-home-gateway/");
-            AppConfig appConfig = gwManager.deployGateway(dockerFileBuilder,"10.40.1.23:8282",
+            AppConfig appConfig = gwManager.deployGateway(dockerFileBuilder, "smart_gw","10.40.1.23:8282",
                     "10.40.1.23:9292", "0.0.0.0:8283");
+            Thread.sleep(5000);
             gwManager.destroyGw(appConfig);
 
     }

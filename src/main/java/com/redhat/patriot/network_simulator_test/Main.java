@@ -38,11 +38,6 @@ public class Main {
 
         if (cmdArgs.isClean()) {
             LOGGER.info("Cleaning docker.");
-            DockerClient dockerClient = DockerClientBuilder.
-                    getInstance(DefaultDockerClientConfig.createDefaultConfigBuilder().build()).build();
-            Cleaner cleaner = new Cleaner();
-            cleaner.cleanUp(Arrays.asList("client_network", "server_network"),
-                    Arrays.asList("comm_client", "comm_server", "router"));
         } else {
             LOGGER.info("Gateway build started");
             gwController.startGateway();
