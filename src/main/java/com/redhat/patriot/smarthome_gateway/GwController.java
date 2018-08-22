@@ -1,7 +1,6 @@
-package com.redhat.patriot.network_simulator_test;
+package com.redhat.patriot.smarthome_gateway;
 
 import com.redhat.patriot.network_simulator.example.container.config.AppConfig;
-import com.redhat.patriot.network_simulator.example.image.docker.builder.DockerFileBuilder;
 
 import java.util.Arrays;
 

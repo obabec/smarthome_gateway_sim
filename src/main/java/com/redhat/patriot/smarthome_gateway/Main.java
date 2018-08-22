@@ -1,16 +1,10 @@
-package com.redhat.patriot.network_simulator_test;
+package com.redhat.patriot.smarthome_gateway;
 
-import com.github.dockerjava.api.DockerClient;
-import com.github.dockerjava.core.DefaultDockerClientConfig;
-import com.github.dockerjava.core.DockerClientBuilder;
 import com.redhat.patriot.network_simulator.example.args.CommandLineParser;
-import com.redhat.patriot.network_simulator.example.cleanup.Cleaner;
 import org.kohsuke.args4j.CmdLineException;
 import org.kohsuke.args4j.CmdLineParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.Arrays;
 
 /**
  * The type Main.

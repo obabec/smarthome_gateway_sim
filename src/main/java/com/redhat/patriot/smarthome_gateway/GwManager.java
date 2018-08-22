@@ -1,6 +1,5 @@
-package com.redhat.patriot.network_simulator_test;
+package com.redhat.patriot.smarthome_gateway;
 
-import com.redhat.patriot.network_simulator.example.container.Container;
 import com.redhat.patriot.network_simulator.example.container.DockerContainer;
 import com.redhat.patriot.network_simulator.example.container.config.AppConfig;
 import com.redhat.patriot.network_simulator.example.image.docker.DockerImage;
@@ -29,6 +28,7 @@ public class GwManager {
     public AppConfig deploy(String name) {
             buildImage(name);
             apps.get(name).setDockerContainer(createAndStart(name, tag));
+            String com = prepareCommand();
             dockerManager.runCommand(apps.get(name).getDockerContainer(), prepareCommand());
             AppConfig appConfig =
                     new AppConfig(dockerManager.findIpAddress(apps.get(name).getDockerContainer()), "running");
@@ -37,10 +37,8 @@ public class GwManager {
 
     private String prepareCommand() {
         String command = "java";
-        for (String arg : args) {
-            command += " -D" + arg;
-        }
-        return command + " -jar " + appPath;
+        return command += (args.isEmpty() ? "" : " -D") + String.join(" -D", args) + " -jar " + appPath;
+
     }
 
     public void destroy(String name) {
