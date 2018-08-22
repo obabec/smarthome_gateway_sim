@@ -13,6 +13,11 @@ public class Application {
         this.dockerFileBuilder = dockerFileBuilder;
     }
 
+    public Application(DockerFileBuilder dockerFileBuilder, AppConfig appConfig) {
+        this.dockerFileBuilder = dockerFileBuilder;
+        this.appConfig = appConfig;
+    }
+
     public DockerFileBuilder getDockerFileBuilder() {
         return dockerFileBuilder;
     }

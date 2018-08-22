@@ -16,8 +16,6 @@ import java.util.*;
  * The type Docker controller.
  */
 public class GwManager {
-    private List<String> args;
-    private String appPath;
     private String tag;
     private DockerManager dockerManager = new DockerManager();
     private HashMap<String, Application> apps = new HashMap<>();
@@ -28,17 +26,10 @@ public class GwManager {
     public AppConfig deploy(String name) {
             buildImage(name);
             apps.get(name).setDockerContainer(createAndStart(name, tag));
-            String com = prepareCommand();
-            dockerManager.runCommand(apps.get(name).getDockerContainer(), prepareCommand());
-            AppConfig appConfig =
-                    new AppConfig(dockerManager.findIpAddress(apps.get(name).getDockerContainer()), "running");
-            return appConfig;
-    }
-
-    private String prepareCommand() {
-        String command = "java";
-        return command += (args.isEmpty() ? "" : " -D") + String.join(" -D", args) + " -jar " + appPath;
-
+            dockerManager.runCommand(apps.get(name).getDockerContainer(), apps.get(name).getAppConfig().getStartCommand());
+            apps.get(name).getAppConfig().setIpadd(dockerManager.findIpAddress(apps.get(name).getDockerContainer()));
+            apps.get(name).getAppConfig().setStatus("running");
+            return apps.get(name).getAppConfig();
     }
 
     public void destroy(String name) {
@@ -57,6 +48,10 @@ public class GwManager {
         }
     }
 
+    public void setStartCommand(String name, String command) {
+        apps.get(name).getAppConfig().setStartCommand(command);
+    }
+
     private void buildImage(Set<String> tags, Path dockerfile) {
         DockerImage dockerImage = new DockerImage(dockerManager);
         dockerImage.buildImage(tags, dockerfile.toAbsolutePath().toString());
@@ -70,22 +65,8 @@ public class GwManager {
 
     public DockerFileBuilder newApp(String name) {
         DockerFileBuilder dockerFileBuilder = new DockerFileBuilder();
-        apps.put(name, new Application(dockerFileBuilder));
+        apps.put(name, new Application(dockerFileBuilder, new AppConfig(name)));
         return dockerFileBuilder;
-    }
-
-    public void setProps(List<String> args, String appPath, String tag) {
-        this.args = args;
-        this.appPath = appPath;
-        this.tag = tag;
-    }
-
-    public void setArgs(List<String> args) {
-        this.args = args;
-    }
-
-    public void setAppPath(String appPath) {
-        this.appPath = appPath;
     }
 
     public void setTag(String tag) {
