@@ -21,20 +21,8 @@ public class Main {
      */
     public static void main(String[] args) throws InterruptedException {
         GwController gwController = new GwController();
-        CommandLineParser cmdArgs = new CommandLineParser();
-        CmdLineParser parser = new CmdLineParser(cmdArgs);
-
-        try {
-            parser.parseArgument(args);
-        } catch (CmdLineException e) {
-            e.printStackTrace();
-        }
-
-        if (cmdArgs.isClean()) {
-            LOGGER.info("Cleaning docker.");
-        } else {
-            LOGGER.info("Gateway build started");
-            gwController.startGateway();
+        LOGGER.info("Gateway build started");
+        gwController.startGateway();
         }
 
 
@@ -42,4 +30,4 @@ public class Main {
 
 
 
-}
+

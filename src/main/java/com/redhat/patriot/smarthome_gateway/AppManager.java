@@ -15,7 +15,7 @@ import java.util.*;
 /**
  * The type Docker controller.
  */
-public class GwManager {
+public class AppManager {
     private String tag;
     private DockerManager dockerManager = new DockerManager();
     private HashMap<String, Application> apps = new HashMap<>();
@@ -26,7 +26,8 @@ public class GwManager {
     public AppConfig deploy(String name) {
             buildImage(name);
             apps.get(name).setDockerContainer(createAndStart(name, tag));
-            dockerManager.runCommand(apps.get(name).getDockerContainer(), apps.get(name).getAppConfig().getStartCommand());
+            dockerManager.runCommand(apps.get(name).getDockerContainer(), apps.get(name)
+                    .getAppConfig().getStartCommand());
             apps.get(name).getAppConfig().setIpadd(dockerManager.findIpAddress(apps.get(name).getDockerContainer()));
             apps.get(name).getAppConfig().setStatus("running");
             return apps.get(name).getAppConfig();
