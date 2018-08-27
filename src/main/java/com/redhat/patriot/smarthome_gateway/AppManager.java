@@ -25,11 +25,9 @@ public class AppManager {
      */
     public AppConfig deploy(String name) {
             buildImage(name);
-            apps.get(name).setDockerContainer(createAndStart(name, tag));
+            createAndStart(name, tag);
             dockerManager.runCommand(apps.get(name).getDockerContainer(), apps.get(name)
                     .getAppConfig().getStartCommand());
-            apps.get(name).getAppConfig().setIpadd(dockerManager.findIpAddress(apps.get(name).getDockerContainer()));
-            apps.get(name).getAppConfig().setStatus("running");
             return apps.get(name).getAppConfig();
     }
 
@@ -61,6 +59,11 @@ public class AppManager {
     private DockerContainer createAndStart(String name, String tag) {
         DockerContainer appCont = (DockerContainer) dockerManager.createContainer(name, tag);
         dockerManager.startContainer(appCont);
+        apps.get(name).setDockerContainer(appCont);
+        AppConfig appConfig = apps.get(name).getAppConfig();
+        appConfig.setIPAdd(dockerManager.findIpAddress(apps.get(name).getDockerContainer()));
+        appConfig.setStatus("running");
+        apps.get(name).setAppConfig(appConfig);
         return appCont;
     }
 
